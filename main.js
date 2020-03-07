@@ -1,6 +1,9 @@
 // Global key for canMakepayment cache.
 const canMakePaymentCache = 'canMakePaymentCache';
 
+// API URL
+const api = 'https://sandboxapi.fsi.ng';
+
 /**
  * Read data for supported instruments from input from.
  */
@@ -19,18 +22,57 @@ function readSupportedInstruments() {
 /**
  * Read the amount from input form.
  */
+ 
+ function makeRequest(verb, url, data) {
+  return new Promise((resolve, reject) => {
+    let request = new XMLHttpRequest();
+    request.open(verb, url);
+    request.onreadystatechange = () => {
+      if (request.readyState === 4) {
+        if (request.status === 200 || request.status === 201) {
+          resolve(JSON.parse(request.response));
+        } else {
+          reject(JSON.parse(request.response));
+        }
+      }
+    };
+    if (verb === 'POST') {
+      request.setRequestHeader('Content-Type', 'application/json');
+      request.send(JSON.stringify(data));
+    } else {
+      request.send();
+    }
+  });
+  
+  async function createPost() {
+  const uidPromise = makeRequest('GET', api + '/sterling/accountapi/api/Spay/InterbankTransferReq');
+
+  const [uidResponse] = await Promise.all([uidPromise]);
+
+  const postPromise = makeRequest('POST', api + '/create-post-with-uid', {
+    uid: uidResponse.uid
+  });
+
+  const postResponse = await postPromise;
+
+  postTitle.textContent = postResponse.post.tn;
+}
+ 
 function readAmount() {
   return document.getElementById('amount').value;
 }
 
 /**
  * Launches payment request.
+ generateButton.addEventListener('click', () => {
+  createPost();
+});
  */
 function onBuyClicked() {
-  if (!window.PaymentRequest) {
-    console.log('Web payments are not supported in this browser.');
-    return;
-  }
+  // if (!window.PaymentRequest) {
+  //  console.log('Web payments are not supported in this browser.');
+  //  return;
+  // }
 
   let formValue = readSupportedInstruments();
 
